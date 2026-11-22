@@ -11,7 +11,7 @@
   <header class="topbar">
     <a class="brand" href="/" aria-label="DentaLoop, на главную"><span class="brand-mark" aria-hidden="true">DL</span><span>DentaLoop</span></a>
     <div class="top-actions">
-      <span class="topic-note">EvoHacks 2 · тема пока неизвестна</span>
+      <span class="topic-note">EvoHacks 2 · Projects for Social Good</span>
       <button id="themeToggle" class="icon-button" type="button" aria-label="Переключить тему">◐</button>
       <button id="langToggle" class="text-button" type="button">EN</button>
     </div>
@@ -24,12 +24,16 @@
         <div>
           <p class="eyebrow" data-i18n="eyebrow">РАБОЧЕЕ ПРОСТРАНСТВО ЛАБОРАТОРИИ</p>
           <h1 data-i18n="headline">Каждый заказ — в своём ритме.</h1>
-          <p class="lede" data-i18n="lede">Единая доска для зуботехника: этапы, сроки и понятный статус для врача.</p>
+          <p class="lede" data-i18n="lede">Единая доска для зуботехника: доступные социальные заказы, этапы, сроки и понятный статус для врача.</p>
         </div>
         <button id="newOrderBtn" class="primary-button" type="button" data-i18n="newOrder">+ Новый заказ</button>
       </div>
       <div id="notice" class="notice hidden" role="status"></div>
       <div class="metric-row" id="metrics"></div>
+      <section class="impact-panel" aria-labelledby="impactTitle">
+        <div class="impact-copy"><p class="eyebrow" data-i18n="impactEyebrow">ПОЛЬЗА</p><h2 id="impactTitle" data-i18n="impactTitle">Социальные заказы под контролем</h2><p data-i18n="impactText">Честная сводка по заказам, которые требуют особого внимания к срокам. Здесь только данные из локального хранилища.</p></div>
+        <div id="impactMetrics" class="impact-metrics"><span class="impact-loading" data-i18n="impactLoading">Загрузка данных…</span></div>
+      </section>
       <section class="toolbar" aria-label="Фильтры заказов">
         <div class="search-wrap"><label class="sr-only" for="search" data-i18n="searchLabel">Поиск</label><input id="search" type="search" placeholder="Поиск по коду, клинике или зубу" data-i18n-placeholder="searchPlaceholder"></div>
         <select id="riskFilter" aria-label="Фильтр риска"><option value="all" data-i18n="allOrders">Все заказы</option><option value="on-time" data-i18n="onTime">В срок</option><option value="risk" data-i18n="atRisk">Риск</option><option value="overdue" data-i18n="overdue">Просрочены</option></select>
@@ -52,6 +56,8 @@
         <label><span data-i18n="shade">Оттенок VITA</span><select name="shade" id="shadeSelect" required></select></label>
         <label><span data-i18n="material">Материал</span><input name="material" id="materialInput" required maxlength="80"></label>
         <label><span data-i18n="dueDate">Срок сдачи</span><input name="dueDate" type="date" required></label>
+        <label class="social-toggle"><span><input name="isSocial" id="socialOrderToggle" type="checkbox"> <span data-i18n="socialOrder">Социальный заказ</span></span><small data-i18n="socialHint">Категория без ФИО и медицинских подробностей.</small></label>
+        <label id="socialCategoryField" class="hidden"><span data-i18n="socialCategory">Категория поддержки</span><select name="socialCategory" id="socialCategorySelect"></select></label>
         <label class="full"><span data-i18n="notes">Примечания</span><textarea name="notes" rows="3" maxlength="1000" placeholder="Особые пожелания врача"></textarea></label>
       </div>
       <p id="formError" class="form-error" role="alert"></p>

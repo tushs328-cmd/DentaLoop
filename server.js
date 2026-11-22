@@ -46,6 +46,12 @@ const WORK_TYPES = {
 };
 
 const VITA_SHADES = ['A1', 'A2', 'A3', 'A3.5', 'A4', 'B1', 'B2', 'B3', 'B4', 'C1', 'C2', 'C3', 'C4', 'D2', 'D3', 'D4'];
+const SOCIAL_CATEGORIES = {
+  elderly: { ru: 'Пожилой пациент', en: 'Older patient' },
+  low_income: { ru: 'Малообеспеченная семья', en: 'Low-income family' },
+  benefit: { ru: 'Льготная категория', en: 'Benefits category' },
+  other: { ru: 'Другое', en: 'Other' }
+};
 
 function isoDate(offsetDays = 0) {
   const date = new Date();
@@ -56,13 +62,18 @@ function isoDate(offsetDays = 0) {
 function token() { return crypto.randomBytes(12).toString('hex'); }
 
 function seedOrders() {
-  return [
+  const orders = [
     makeOrder({ patientCode: 'DL-204', clinic: 'Стоматология «Маяк»', dentist: 'д-р Алина К.', type: 'zirconia', teeth: '1.1', shade: 'A1', material: 'Zirconia', dueDate: isoDate(4), notes: 'Демо: сохранить прозрачность режущего края.', stage: 'process' }),
     makeOrder({ patientCode: 'DL-205', clinic: 'White Line', dentist: 'д-р Тимур С.', type: 'pfm', teeth: '2.6', shade: 'A2', material: 'PFM', dueDate: isoDate(2), notes: 'Демо: проверить окклюзию по скану.', stage: 'model' }),
     makeOrder({ patientCode: 'DL-206', clinic: 'Dental Point', dentist: 'д-р Мария Р.', type: 'bridge', teeth: '3.4–3.6', shade: 'B2', material: 'Zirconia / PFM', dueDate: isoDate(-1), notes: 'Демо: срочный заказ для теста риска.', stage: 'intake' }),
     makeOrder({ patientCode: 'DL-207', clinic: 'Стоматология «Клевер»', dentist: 'д-р Илья Н.', type: 'veneer', teeth: '1.2', shade: 'A1', material: 'Lithium disilicate', dueDate: isoDate(7), notes: 'Демо: без личных данных пациента.', stage: 'tryin' }),
-    makeOrder({ patientCode: 'DL-208', clinic: 'Nova Dental', dentist: 'д-р Елена П.', type: 'temporary', teeth: '4.6', shade: 'A3', material: 'PMMA', dueDate: isoDate(1), notes: 'Демо: временная коронка.', stage: 'qc' })
+    makeOrder({ patientCode: 'DL-208', clinic: 'Nova Dental', dentist: 'д-р Елена П.', type: 'temporary', teeth: '4.6', shade: 'A3', material: 'PMMA', dueDate: isoDate(1), notes: 'Демо: временная коронка.', stage: 'qc' }),
+    makeOrder({ patientCode: 'DL-209', clinic: 'Стоматология «Маяк»', dentist: 'д-р Алина К.', type: 'denture', teeth: '1.1–1.6', shade: 'A2', material: 'Acrylic', dueDate: isoDate(3), notes: 'Демо: социальный заказ. Без ФИО и медицинских деталей.', stage: 'model', isSocial: true, socialCategory: 'elderly' }),
+    makeOrder({ patientCode: 'DL-210', clinic: 'White Line', dentist: 'д-р Тимур С.', type: 'temporary', teeth: '2.6', shade: 'A2', material: 'PMMA', dueDate: isoDate(5), notes: 'Демо: социальный заказ.', stage: 'ship', isSocial: true, socialCategory: 'low_income', completedAt: new Date().toISOString() }),
+    makeOrder({ patientCode: 'DL-211', clinic: 'Dental Point', dentist: 'д-р Мария Р.', type: 'bridge', teeth: '3.4–3.6', shade: 'B2', material: 'Zirconia / PFM', dueDate: isoDate(-2), notes: 'Демо: социальный заказ для проверки просрочки.', stage: 'process', isSocial: true, socialCategory: 'benefit' }),
+    makeOrder({ patientCode: 'DL-212', clinic: 'Nova Dental', dentist: 'д-р Елена П.', type: 'veneer', teeth: '1.2', shade: 'A1', material: 'Lithium disilicate', dueDate: isoDate(4), notes: 'Демо: социальный заказ.', stage: 'tryin', isSocial: true, socialCategory: 'other' })
   ];
+  return orders;
 }
 
 function makeOrder(input) {
@@ -81,32 +92,35 @@ function makeOrder(input) {
     dueDate: input.dueDate,
     notes: String(input.notes || '').trim(),
     stage: input.stage || WORK_TYPES[type]?.stages[0][0] || 'intake',
+    isSocial: Boolean(input.isSocial),
+    socialCategory: input.isSocial ? String(input.socialCategory || 'other') : null,
+    completedAt: input.completedAt || null,
     isDemo: Boolean(input.isDemo),
     createdAt: input.createdAt || now,
     updatedAt: input.updatedAt || now
   };
 }
 
-function ensureStore() {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-  if (!fs.existsSync(DATA_FILE)) writeOrders(seedOrders().map((order) => ({ ...order, isDemo: true })));
+function ensureStore(file = DATA_FILE) {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  if (!fs.existsSync(file)) writeOrders(seedOrders().map((order) => ({ ...order, isDemo: true })), file);
 }
 
-function readOrders() {
-  ensureStore();
+function readOrders(file = DATA_FILE) {
+  ensureStore(file);
   try {
-    const parsed = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+    const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
     return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
   }
 }
 
-function writeOrders(orders) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-  const temp = `${DATA_FILE}.tmp`;
+function writeOrders(orders, file = DATA_FILE) {
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  const temp = `${file}.tmp`;
   fs.writeFileSync(temp, JSON.stringify(orders, null, 2), 'utf8');
-  fs.renameSync(temp, DATA_FILE);
+  fs.renameSync(temp, file);
 }
 
 function typeStages(order) { return WORK_TYPES[order.type]?.stages || []; }
@@ -118,8 +132,10 @@ function calculateRisk(order, now = new Date()) {
   const expected = new Date(now);
   expected.setDate(expected.getDate() + remainingDays);
   const due = new Date(`${order.dueDate}T23:59:59`);
-  const status = now > due ? 'overdue' : expected > due ? 'risk' : 'on-time';
-  return { status, remainingDays, expectedDate: expected.toISOString().slice(0, 10), dueDate: order.dueDate };
+  const riskDue = new Date(due);
+  if (order.isSocial) riskDue.setDate(riskDue.getDate() - 1);
+  const status = now > due ? 'overdue' : expected > riskDue ? 'risk' : 'on-time';
+  return { status, remainingDays, expectedDate: expected.toISOString().slice(0, 10), dueDate: order.dueDate, strict: Boolean(order.isSocial) };
 }
 
 function publicOrder(order) {
@@ -137,7 +153,19 @@ function publicOrder(order) {
 }
 
 function safeOrder(order) {
-  return { ...order, typeLabel: WORK_TYPES[order.type]?.ru || order.type, risk: calculateRisk(order) };
+  return { ...order, typeLabel: WORK_TYPES[order.type]?.ru || order.type, socialCategoryLabel: SOCIAL_CATEGORIES[order.socialCategory]?.ru || null, risk: calculateRisk(order) };
+}
+
+function sortOrders(orders) {
+  return [...orders].sort((a, b) => a.dueDate.localeCompare(b.dueDate) || Number(b.isSocial) - Number(a.isSocial) || String(a.createdAt).localeCompare(String(b.createdAt)));
+}
+
+function calculateImpact(orders) {
+  const social = orders.filter((order) => order.isSocial);
+  const deliveredOnTime = social.filter((order) => order.stage === 'ship' && order.completedAt && new Date(order.completedAt) <= new Date(`${order.dueDate}T23:59:59`)).length;
+  const risk = social.filter((order) => calculateRisk(order).status === 'risk').length;
+  const overdue = social.filter((order) => calculateRisk(order).status === 'overdue').length;
+  return { total: social.length, deliveredOnTime, risk, overdue, onTimeRate: social.length ? Math.round((deliveredOnTime / social.length) * 100) : 0 };
 }
 
 function validOrderInput(body) {
@@ -145,6 +173,7 @@ function validOrderInput(body) {
   if (!body || typeof body !== 'object') return 'Некорректное тело запроса.';
   for (const field of required) if (typeof body[field] !== 'string' || !body[field].trim()) return `Поле «${field}» обязательно.`;
   if (!WORK_TYPES[body.type]) return 'Неизвестный тип работы.';
+  if (body.isSocial && !SOCIAL_CATEGORIES[body.socialCategory]) return 'Выберите категорию социального заказа.';
   if (!VITA_SHADES.includes(body.shade.toUpperCase())) return 'Недопустимый оттенок VITA.';
   if (!/^\d{4}-\d{2}-\d{2}$/.test(body.dueDate) || Number.isNaN(new Date(`${body.dueDate}T00:00:00`).getTime())) return 'Срок сдачи должен быть датой YYYY-MM-DD.';
   if (body.patientCode.length > 40 || body.clinic.length > 100 || body.dentist.length > 100 || body.notes?.length > 1000) return 'Слишком длинное значение поля.';
@@ -178,7 +207,7 @@ async function aiHint(order) {
   }
 }
 
-function createApp() {
+function createApp({ dataFile = DATA_FILE } = {}) {
   const app = express();
   app.disable('x-powered-by');
   app.use(express.json({ limit: '100kb' }));
@@ -191,42 +220,44 @@ function createApp() {
   });
   app.use(express.static(path.join(ROOT, 'public'), { maxAge: process.env.NODE_ENV === 'production' ? '1h' : 0 }));
 
-  app.get('/api/config', (req, res) => res.json({ stages: STAGES, workTypes: WORK_TYPES, vitaShades: VITA_SHADES, aiAvailable: Boolean(process.env.LLM_API_KEY || process.env.OLLAMA_URL) }));
-  app.get('/api/orders', (req, res) => res.json(readOrders().map(safeOrder)));
+  app.get('/api/config', (req, res) => res.json({ stages: STAGES, workTypes: WORK_TYPES, vitaShades: VITA_SHADES, socialCategories: SOCIAL_CATEGORIES, aiAvailable: Boolean(process.env.LLM_API_KEY || process.env.OLLAMA_URL) }));
+  app.get('/api/orders', (req, res) => res.json(sortOrders(readOrders(dataFile)).map(safeOrder)));
   app.post('/api/orders', (req, res) => {
     const error = validOrderInput(req.body);
     if (error) return res.status(400).json({ error });
-    const orders = readOrders();
+    const orders = readOrders(dataFile);
     const order = makeOrder(req.body);
     orders.unshift(order);
-    writeOrders(orders);
+    writeOrders(orders, dataFile);
     return res.status(201).json(safeOrder(order));
   });
   app.patch('/api/orders/:id', (req, res) => {
-    const orders = readOrders();
+    const orders = readOrders(dataFile);
     const index = orders.findIndex((order) => order.id === req.params.id);
     if (index < 0) return res.status(404).json({ error: 'Заказ не найден.' });
     const order = orders[index];
     if (typeof req.body.stage !== 'string' || !typeStages(order).some(([stage]) => stage === req.body.stage)) return res.status(400).json({ error: 'Недопустимый этап для этого типа работы.' });
     order.stage = req.body.stage;
+    order.completedAt = req.body.stage === 'ship' ? (order.completedAt || new Date().toISOString()) : null;
     order.updatedAt = new Date().toISOString();
-    writeOrders(orders);
+    writeOrders(orders, dataFile);
     return res.json(safeOrder(order));
   });
   app.get('/api/orders/:id/assistant', async (req, res) => {
-    const order = readOrders().find((candidate) => candidate.id === req.params.id);
+    const order = readOrders(dataFile).find((candidate) => candidate.id === req.params.id);
     if (!order) return res.status(404).json({ error: 'Заказ не найден.' });
     return res.json(await aiHint(order));
   });
   app.get('/api/public/:token', (req, res) => {
-    const order = readOrders().find((candidate) => candidate.publicToken === req.params.token);
+    const order = readOrders(dataFile).find((candidate) => candidate.publicToken === req.params.token);
     if (!order) return res.status(404).json({ error: 'Ссылка статуса не найдена.' });
     return res.json(publicOrder(order));
   });
+  app.get('/api/impact', (req, res) => res.json(calculateImpact(readOrders(dataFile))));
   app.post('/api/demo/reset', (req, res) => {
     const orders = seedOrders().map((order) => ({ ...order, isDemo: true }));
-    writeOrders(orders);
-    return res.json(orders.map(safeOrder));
+    writeOrders(orders, dataFile);
+    return res.json(sortOrders(orders).map(safeOrder));
   });
   app.post('/api/import', (req, res) => {
     if (!Array.isArray(req.body)) return res.status(400).json({ error: 'Импорт должен быть JSON-массивом заказов.' });
@@ -238,7 +269,7 @@ function createApp() {
       if (!typeStages(order).some(([stage]) => stage === order.stage)) order.stage = typeStages(order)[0][0];
       cleaned.push(order);
     }
-    writeOrders(cleaned);
+    writeOrders(cleaned, dataFile);
     return res.json(cleaned.map(safeOrder));
   });
   app.get('/status/:token', (req, res) => res.sendFile(path.join(ROOT, 'public', 'index.html')));
@@ -252,4 +283,4 @@ if (require.main === module) {
   createApp().listen(PORT, () => console.log(`DentaLoop запущен: http://localhost:${PORT}`));
 }
 
-module.exports = { createApp, WORK_TYPES, STAGES, VITA_SHADES, calculateRisk, publicOrder, DATA_FILE, seedOrders };
+module.exports = { createApp, WORK_TYPES, STAGES, VITA_SHADES, SOCIAL_CATEGORIES, calculateRisk, calculateImpact, publicOrder, DATA_FILE, seedOrders, sortOrders };

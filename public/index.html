@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="DentaLoop — локальная доска заказов для зуботехнической лаборатории">
+  <title>DentaLoop — лаборатория без пропущенных сроков</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="DentaLoop, на главную"><span class="brand-mark" aria-hidden="true">DL</span><span>DentaLoop</span></a>
+    <div class="top-actions">
+      <span class="topic-note">EvoHacks 2 · тема пока неизвестна</span>
+      <button id="themeToggle" class="icon-button" type="button" aria-label="Переключить тему">◐</button>
+      <button id="langToggle" class="text-button" type="button">EN</button>
+    </div>
+  </header>
+
+  <main id="app" class="shell">
+    <section id="statusView" class="status-view hidden" aria-live="polite"></section>
+    <section id="workspaceView">
+      <div class="hero-row">
+        <div>
+          <p class="eyebrow" data-i18n="eyebrow">РАБОЧЕЕ ПРОСТРАНСТВО ЛАБОРАТОРИИ</p>
+          <h1 data-i18n="headline">Каждый заказ — в своём ритме.</h1>
+          <p class="lede" data-i18n="lede">Единая доска для зуботехника: этапы, сроки и понятный статус для врача.</p>
+        </div>
+        <button id="newOrderBtn" class="primary-button" type="button" data-i18n="newOrder">+ Новый заказ</button>
+      </div>
+      <div id="notice" class="notice hidden" role="status"></div>
+      <div class="metric-row" id="metrics"></div>
+      <section class="toolbar" aria-label="Фильтры заказов">
+        <div class="search-wrap"><label class="sr-only" for="search" data-i18n="searchLabel">Поиск</label><input id="search" type="search" placeholder="Поиск по коду, клинике или зубу" data-i18n-placeholder="searchPlaceholder"></div>
+        <select id="riskFilter" aria-label="Фильтр риска"><option value="all" data-i18n="allOrders">Все заказы</option><option value="on-time" data-i18n="onTime">В срок</option><option value="risk" data-i18n="atRisk">Риск</option><option value="overdue" data-i18n="overdue">Просрочены</option></select>
+        <div class="toolbar-actions"><button id="exportBtn" class="secondary-button" type="button" data-i18n="export">Экспорт JSON</button><label class="secondary-button file-button"><span data-i18n="import">Импорт JSON</span><input id="importInput" type="file" accept="application/json"></label><button id="resetDemoBtn" class="ghost-button" type="button" data-i18n="resetDemo">Сбросить демо</button></div>
+      </section>
+      <section id="board" class="board" aria-label="Канбан-доска"></section>
+    </section>
+  </main>
+
+  <dialog id="orderDialog" class="order-dialog">
+    <form id="orderForm" method="dialog" novalidate>
+      <div class="dialog-head"><div><p class="eyebrow" data-i18n="newOrderEyebrow">НОВЫЙ ЗАКАЗ</p><h2 data-i18n="formTitle">Создать заказ</h2></div><button class="close-button" value="cancel" type="submit" aria-label="Закрыть">×</button></div>
+      <p class="privacy-hint" data-i18n="privacyHint">Используйте код пациента, не ФИО. Публичная ссылка никогда не показывает личные данные.</p>
+      <div class="form-grid">
+        <label><span data-i18n="patientCode">Код пациента</span><input name="patientCode" required maxlength="40" placeholder="DL-209"></label>
+        <label><span data-i18n="clinic">Клиника</span><input name="clinic" required maxlength="100" placeholder="Nova Dental"></label>
+        <label><span data-i18n="dentist">Врач</span><input name="dentist" required maxlength="100" placeholder="д-р А. К."></label>
+        <label><span data-i18n="workType">Тип работы</span><select name="type" id="typeSelect" required></select></label>
+        <label><span data-i18n="teeth">Зуб / зубы</span><input name="teeth" required maxlength="40" placeholder="1.1, 1.2"></label>
+        <label><span data-i18n="shade">Оттенок VITA</span><select name="shade" id="shadeSelect" required></select></label>
+        <label><span data-i18n="material">Материал</span><input name="material" id="materialInput" required maxlength="80"></label>
+        <label><span data-i18n="dueDate">Срок сдачи</span><input name="dueDate" type="date" required></label>
+        <label class="full"><span data-i18n="notes">Примечания</span><textarea name="notes" rows="3" maxlength="1000" placeholder="Особые пожелания врача"></textarea></label>
+      </div>
+      <p id="formError" class="form-error" role="alert"></p>
+      <div class="dialog-actions"><button class="ghost-button" value="cancel" type="submit" data-i18n="cancel">Отмена</button><button class="primary-button" value="default" type="submit" data-i18n="create">Создать заказ</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="orderDetailsDialog" class="details-dialog"><div id="orderDetails"></div></dialog>
+  <script src="/app.js" defer></script>
+</body>
+</html>
